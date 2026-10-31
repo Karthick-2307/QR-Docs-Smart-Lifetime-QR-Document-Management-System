@@ -73,9 +73,11 @@ class Config:
         else:
             SQLALCHEMY_DATABASE_URI = raw_db_url
     else:
-        # Render / Heroku provides postgres:// which SQLAlchemy 1.4+ rejects; rewrite to postgresql://
+        # Ensure postgresql+psycopg2 driver is specified for SQLAlchemy
         if raw_db_url.startswith("postgres://"):
-            raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+            raw_db_url = raw_db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+        elif raw_db_url.startswith("postgresql://") and not raw_db_url.startswith("postgresql+"):
+            raw_db_url = raw_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
         # Clean channel_binding parameter if present (prevents libpq driver incompatibilities)
         if "channel_binding=" in raw_db_url:
             import re
