@@ -1,0 +1,61 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Printable QR Label{% endblock %}
+
+{% block admin_content %}
+<div class="no-print" style="max-width: 800px; margin: 0 auto 1.5rem auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <span style="font-size: 0.875rem; font-weight: 600;">Layout:</span>
+    <a href="{{ url_for('admin.printable_label', public_id=document.public_id, layout='a4') }}" class="btn btn-sm {% if layout != 'compact' %}btn-primary{% else %}btn-secondary{% endif %}">
+      A4 Document Sheet
+    </a>
+    <a href="{{ url_for('admin.printable_label', public_id=document.public_id, layout='compact') }}" class="btn btn-sm {% if layout == 'compact' %}btn-primary{% else %}btn-secondary{% endif %}">
+      Compact Sticker
+    </a>
+  </div>
+
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="{{ url_for('documents.serve_qr_image', public_id=document.public_id) }}" download="{{ document.public_id }}.png" class="btn btn-secondary btn-sm">
+      Download QR PNG
+    </a>
+    <button type="button" class="btn btn-primary btn-sm" onclick="window.print()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+      Print Label
+    </button>
+  </div>
+</div>
+
+<!-- Print Page Container -->
+<div class="print-page">
+  <div class="label-container {{ layout }}">
+    <!-- Logo & Branding -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem;">
+      <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="Logo" style="width: 28px; height: 28px;">
+      <span style="font-weight: 800; font-size: 1.1rem; color: #1E293B;">CertVault</span>
+    </div>
+
+    <!-- Title -->
+    <div class="label-title">{{ document.title }}</div>
+
+    <!-- QR Code Image -->
+    <img src="{{ url_for('documents.serve_qr_image', public_id=document.public_id) }}" alt="QR Code" class="print-qr-img">
+
+    <!-- Instructions -->
+    <div class="label-instructions">Scan to view document</div>
+
+    <!-- Readable Public URL & Document ID -->
+    <div class="label-meta" style="margin-top: 0.5rem;">
+      <strong>URL:</strong> {{ public_url }}<br>
+      <strong>ID:</strong> {{ document.public_id }}
+    </div>
+
+    {% if document.document_date or document.author %}
+    <div class="label-meta" style="margin-top: 0.25rem;">
+      {% if document.author %}Issuer: {{ document.author }} {% endif %}
+      {% if document.document_date %}| Date: {{ document.document_date.strftime('%Y-%m-%d') }}{% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

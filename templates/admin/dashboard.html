@@ -1,0 +1,201 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}System Overview{% endblock %}
+
+{% block admin_content %}
+<!-- Overview Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Total Documents</span>
+      <span class="stat-value">{{ total_docs }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon" style="background: var(--success-bg); color: var(--success);">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Active QR Codes</span>
+      <span class="stat-value">{{ active_qrs }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #FEF3C7; color: #D97706;">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Uploaded Today</span>
+      <span class="stat-value">{{ uploaded_today }}</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon" style="background: #F3E8FF; color: #9333EA;">
+      <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+    </div>
+    <div class="stat-content">
+      <span class="stat-label">Total Storage</span>
+      <span class="stat-value">
+        {% if total_storage_bytes < 1048576 %}
+          {{ (total_storage_bytes / 1024)|round(1) }} KB
+        {% else %}
+          {{ (total_storage_bytes / 1048576)|round(2) }} MB
+        {% endif %}
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Documents Card -->
+<div class="card">
+  <div class="card-header">
+    <h3 style="font-size: 1.15rem; margin: 0;">Recent Documents</h3>
+    <a href="{{ url_for('admin.documents_list') }}" class="btn btn-secondary btn-sm">View All Documents</a>
+  </div>
+
+  {% if recent_docs %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Title & Public ID</th>
+          <th>Type</th>
+          <th>Uploaded</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in recent_docs %}
+        <tr>
+          <td style="width: 50px;">
+            {% if doc.file_extension in ('png', 'jpg', 'jpeg') %}
+              <img src="{{ url_for('documents.view_document_file', public_id=doc.public_id) }}" alt="Preview" class="doc-thumbnail">
+            {% else %}
+              <div class="doc-thumbnail">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--text);">{{ doc.title }}</div>
+            <div style="font-size: 0.775rem; color: var(--text-muted); font-family: monospace;">{{ doc.public_id }}</div>
+          </td>
+          <td>
+            <span class="badge badge-secondary">{{ doc.file_extension.upper() }}</span>
+          </td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">
+            {{ doc.uploaded_at.strftime('%Y-%m-%d %H:%M') }}
+          </td>
+          <td>
+            {% if not doc.is_active %}
+              <span class="badge badge-danger">Inactive</span>
+            {% elif doc.is_expired %}
+              <span class="badge badge-warning">Expired</span>
+            {% else %}
+              <span class="badge badge-success">Active</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+              <a href="{{ url_for('documents.view_public_document', public_id=doc.public_id) }}" target="_blank" class="btn btn-secondary btn-sm" title="View Public Page">View</a>
+              <a href="{{ url_for('admin.edit_document', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Edit Metadata">Edit</a>
+              <a href="{{ url_for('documents.download_document_file', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Download Document">Download</a>
+              <a href="{{ url_for('documents.serve_qr_image', public_id=doc.public_id) }}" download="{{ doc.public_id }}.png" class="btn btn-secondary btn-sm" title="Download QR PNG">QR</a>
+              <a href="{{ url_for('admin.printable_label', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Printable Label">Label</a>
+              
+              {% if doc.is_active %}
+                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="deactivate-modal-{{ doc.public_id }}" style="color: var(--warning);" title="Deactivate">Deactivate</button>
+              {% else %}
+                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="reactivate-modal-{{ doc.public_id }}" style="color: var(--success);" title="Reactivate">Reactivate</button>
+              {% endif %}
+              
+              <button type="button" class="btn btn-secondary btn-sm" data-modal-target="delete-modal-{{ doc.public_id }}" style="color: var(--danger);" title="Permanently Delete">Delete</button>
+            </div>
+
+            <!-- Deactivate Modal -->
+            <div id="deactivate-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4>Deactivate Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p>Are you sure you want to deactivate <strong>{{ doc.title }}</strong>?</p>
+                  <p style="font-size: 0.85rem;">The public QR code and URL will return a <strong>410 Gone</strong> page. You can reactivate this document at any time and the same QR code will work again.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.deactivate_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger">Confirm Deactivation</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reactivate Modal -->
+            <div id="reactivate-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4>Reactivate Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p>Reactivate <strong>{{ doc.title }}</strong>?</p>
+                  <p style="font-size: 0.85rem;">The public QR code and URL will immediately resume serving this document.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.reactivate_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-success">Reactivate</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div id="delete-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4 style="color: var(--danger);">Permanently Delete Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>Warning:</strong> You are about to permanently delete <strong>{{ doc.title }}</strong>.</p>
+                  <p style="font-size: 0.85rem;">The physical file and QR image will be erased from storage. Its public ID (<code>{{ doc.public_id }}</code>) will be recorded as a permanent tombstone so it is never reused and the URL continues to return 410 Gone.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.delete_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger">Permanently Delete</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align: center; padding: 3rem 1rem;">
+    <svg width="48" height="48" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--secondary); margin-bottom: 1rem;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <h4>No documents uploaded yet</h4>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Upload your first document to generate a lifetime QR code.</p>
+    <a href="{{ url_for('admin.upload') }}" class="btn btn-primary">Upload Document</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

@@ -1,0 +1,120 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Upload Document{% endblock %}
+
+{% block admin_content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+  <div class="card-header">
+    <div>
+      <h3 style="font-size: 1.2rem; margin: 0;">Upload New Document</h3>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin: 0.25rem 0 0 0;">
+        Upload a file to automatically generate a lifetime QR code and permanent public URL.
+      </p>
+    </div>
+  </div>
+
+  <form method="POST" action="{{ url_for('admin.upload') }}" enctype="multipart/form-data" id="uploadForm">
+    {{ form.hidden_tag() }}
+
+    <!-- Drag & Drop Zone -->
+    <div class="dropzone" id="dropzone">
+      <svg class="dropzone-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+      </svg>
+      <h4 style="margin-bottom: 0.5rem;">Drag & drop your document here</h4>
+      <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1rem;">
+        Supports PDF, PNG, JPG/JPEG up to 10 MB
+      </p>
+      <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('file').click()">
+        Browse Files
+      </button>
+      <input type="file" name="file" id="file" style="display: none;" accept=".pdf,.png,.jpg,.jpeg">
+    </div>
+
+    <!-- Selected File Preview -->
+    <div id="filePreview" class="file-preview">
+      <img id="previewImg" src="" alt="File Preview" style="display: none;">
+      <div id="previewIcon" style="display: none; width: 48px; height: 48px; border-radius: 8px; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+        <svg width="28" height="28" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      </div>
+      <div style="flex-grow: 1;">
+        <div id="previewName" style="font-weight: 600; font-size: 0.95rem;"></div>
+        <div id="previewSize" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+      </div>
+    </div>
+
+    <!-- Progress Indicator -->
+    <div id="progressContainer" style="display: none; margin: 1.5rem 0;">
+      <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem; color: var(--text-muted);">
+        <span>Processing and uploading...</span>
+      </div>
+      <div style="width: 100%; height: 8px; background: var(--surface-alt); border-radius: 9999px; overflow: hidden;">
+        <div id="uploadProgressBar" style="width: 0%; height: 100%; background: var(--primary); transition: width 0.3s ease;"></div>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 1.5rem;">
+      <div class="form-group">
+        <label class="form-label" for="title">Document Title <span style="color: var(--danger);">*</span></label>
+        {{ form.title(class="form-control", id="title", placeholder="e.g. Annual Equipment Maintenance Log 2026", required=true) }}
+        {% for error in form.title.errors %}
+          <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description</label>
+        {{ form.description(class="form-control", id="description", rows="3", placeholder="Brief summary of document content, purpose, or context") }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="certificate_code">Certificate ID / Masked Code</label>
+          {{ form.certificate_code(class="form-control", id="certificate_code", placeholder="e.g. THX-SEP2626-093 (auto-generated if empty)") }}
+          <div class="form-text">Short 4-digit code or custom certificate ID for manual verification.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="category">Category / Domain</label>
+          {{ form.category(class="form-control", id="category", placeholder="e.g. Full Stack Development, HR") }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tags">Tags</label>
+        {{ form.tags(class="form-control", id="tags", placeholder="Comma-separated (e.g. safety, audit, 2026)") }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="author">Author / Issuer</label>
+          {{ form.author(class="form-control", id="author", placeholder="e.g. Engineering Dept, Dr. Smith") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="document_date">Document Date</label>
+          {{ form.document_date(class="form-control", id="document_date", type="date") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="expiry_date">Expiry Date (Informational)</label>
+          {{ form.expiry_date(class="form-control", id="expiry_date", type="date") }}
+          <div class="form-text">Informational only. The QR code never stops working when expired.</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem; display: flex; justify-content: flex-end; gap: 1rem;">
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary btn-lg">
+        Upload & Generate QR Code
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}
+

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}Document Unavailable (410 Gone) – QR Docs{% endblock %}
+
+{% block content %}
+<div style="max-width: 560px; margin: 4rem auto; text-align: center;">
+  <div style="display: inline-flex; align-items: center; justify-content: center; width: 72px; height: 72px; background: #FEE2E2; color: #DC2626; border-radius: 9999px; margin-bottom: 1.5rem;">
+    <svg width="36" height="36" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+  </div>
+
+  <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--text);">
+    This Document is No Longer Available
+  </h1>
+
+  <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 1.5rem;">
+    The document associated with this permanent QR code has been retired or deactivated by the system administrator.
+  </p>
+
+  {% if public_id %}
+  <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: inline-block; font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;">
+    Public ID: {{ public_id }}
+  </div>
+  {% endif %}
+
+  <div style="display: flex; gap: 1rem; justify-content: center;">
+    <a href="{{ url_for('scanner.scanner_page') }}" class="btn btn-primary">
+      Open QR Scanner
+    </a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">
+      Return Home
+    </a>
+  </div>
+</div>
+{% endblock %}
+

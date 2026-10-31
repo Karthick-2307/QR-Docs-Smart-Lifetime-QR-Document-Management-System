@@ -1,0 +1,85 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block admin_content %}
+<div style="max-width: 560px; margin: 0 auto;">
+  <div class="card">
+    <div style="margin-bottom: 1.5rem;">
+      <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0 0 0.25rem 0;">{{ title }}</h2>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">
+        Configure custom name, credentials, and access role.
+      </p>
+    </div>
+
+    <form method="POST" novalidate>
+      {{ form.hidden_tag() }}
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="display_name" class="form-label">
+          Custom Name <span style="color: var(--danger);">*</span>
+        </label>
+        {{ form.display_name(class="form-control" + (" is-invalid" if form.display_name.errors else ""), placeholder="e.g. Manoj S, Admin Support") }}
+        <small style="color: var(--text-muted); font-size: 0.8rem;">
+          This custom name will be shown near the <code>(admin)</code> or <code>(sub admin)</code> badge.
+        </small>
+        {% for error in form.display_name.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="username" class="form-label">
+          Login Username <span style="color: var(--danger);">*</span>
+        </label>
+        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), placeholder="e.g. manoj_support") }}
+        {% for error in form.username.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="role" class="form-label">
+          Account Role <span style="color: var(--danger);">*</span>
+        </label>
+        {{ form.role(class="form-select" + (" is-invalid" if form.role.errors else "")) }}
+        <small style="color: var(--text-muted); font-size: 0.8rem;">
+          <strong>Sub Admin:</strong> Full operational access (upload, edit, scan, QR codes), but cannot delete admins.<br>
+          <strong>Main Admin:</strong> Unrestricted control including sub-admin management and deletion.
+        </small>
+        {% for error in form.role.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      {% if form.password is defined %}
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label for="password" class="form-label">
+          Password <span style="color: var(--danger);">*</span>
+        </label>
+        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), placeholder="••••••••") }}
+        {% for error in form.password.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+      {% elif form.new_password is defined %}
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label for="new_password" class="form-label">
+          New Password (optional)
+        </label>
+        {{ form.new_password(class="form-control" + (" is-invalid" if form.new_password.errors else ""), placeholder="Leave blank to keep current password") }}
+        {% for error in form.new_password.errors %}
+          <div class="invalid-feedback">{{ error }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+        <a href="{{ url_for('admin.users_list') }}" class="btn btn-secondary">Cancel</a>
+        {{ form.submit(class="btn btn-primary") }}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

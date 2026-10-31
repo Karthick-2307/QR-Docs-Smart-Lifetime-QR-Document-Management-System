@@ -1,0 +1,232 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}All Documents{% endblock %}
+
+{% block admin_content %}
+<!-- Search & Filter Bar -->
+<form method="GET" action="{{ url_for('admin.documents_list') }}" class="filter-bar">
+  <div class="filter-input">
+    <input type="text" name="q" value="{{ query_str or '' }}" placeholder="Search title, ID, tag, author..." class="form-control">
+  </div>
+
+  <div style="flex: 0 1 140px;">
+    <select name="category" class="form-select">
+      <option value="">All Categories</option>
+      {% for cat in categories %}
+        <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>{{ cat }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div style="flex: 0 1 120px;">
+    <select name="file_type" class="form-select">
+      <option value="">All Types</option>
+      <option value="pdf" {% if current_file_type == 'pdf' %}selected{% endif %}>PDF</option>
+      <option value="png" {% if current_file_type == 'png' %}selected{% endif %}>PNG</option>
+      <option value="jpg" {% if current_file_type == 'jpg' %}selected{% endif %}>JPG</option>
+    </select>
+  </div>
+
+  <div style="flex: 0 1 130px;">
+    <select name="status" class="form-select">
+      <option value="">All Statuses</option>
+      <option value="active" {% if current_status == 'active' %}selected{% endif %}>Active</option>
+      <option value="inactive" {% if current_status == 'inactive' %}selected{% endif %}>Inactive</option>
+      <option value="expired" {% if current_status == 'expired' %}selected{% endif %}>Expired</option>
+    </select>
+  </div>
+
+  <div style="flex: 0 1 130px;">
+    <select name="sort_by" class="form-select">
+      <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Newest First</option>
+      <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Oldest First</option>
+      <option value="title" {% if sort_by == 'title' %}selected{% endif %}>Title A-Z</option>
+    </select>
+  </div>
+
+  <div style="display: flex; gap: 0.5rem;">
+    <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+    {% if query_str or current_category or current_file_type or current_status or date_from or date_to or sort_by != 'newest' %}
+      <a href="{{ url_for('admin.documents_list') }}" class="btn btn-secondary btn-sm">Reset</a>
+    {% endif %}
+  </div>
+</form>
+
+<!-- Documents Table Card -->
+<div class="card">
+  {% if pagination.items %}
+  <div class="table-responsive">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Document Details</th>
+          <th>Category & Tags</th>
+          <th>Type / Size</th>
+          <th>Uploaded</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for doc in pagination.items %}
+        <tr>
+          <td style="width: 50px;">
+            {% if doc.file_extension in ('png', 'jpg', 'jpeg') %}
+              <img src="{{ url_for('documents.view_document_file', public_id=doc.public_id) }}" alt="Preview" class="doc-thumbnail">
+            {% else %}
+              <div class="doc-thumbnail">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight: 600; color: var(--text);">{{ doc.title }}</div>
+            <div style="font-size: 0.775rem; color: var(--text-muted); font-family: monospace;">{{ doc.public_id }}</div>
+            {% if doc.author %}
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Author: {{ doc.author }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if doc.category %}
+              <span class="badge badge-secondary" style="margin-bottom: 0.25rem;">{{ doc.category }}</span><br>
+            {% endif %}
+            {% for tag in doc.get_tags_list() %}
+              <span style="font-size: 0.75rem; background: var(--surface-alt); padding: 0.15rem 0.4rem; border-radius: 4px; color: var(--text-muted); margin-right: 0.25rem;">#{{ tag }}</span>
+            {% endfor %}
+          </td>
+          <td>
+            <span class="badge badge-secondary">{{ doc.file_extension.upper() }}</span>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+              {% if doc.file_size < 1048576 %}
+                {{ (doc.file_size / 1024)|round(1) }} KB
+              {% else %}
+                {{ (doc.file_size / 1048576)|round(2) }} MB
+              {% endif %}
+            </div>
+          </td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">
+            {{ doc.uploaded_at.strftime('%Y-%m-%d') }}
+          </td>
+          <td>
+            {% if not doc.is_active %}
+              <span class="badge badge-danger">Inactive</span>
+            {% elif doc.is_expired %}
+              <span class="badge badge-warning">Expired</span>
+            {% else %}
+              <span class="badge badge-success">Active</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display: flex; gap: 0.35rem; align-items: center; flex-wrap: wrap;">
+              <a href="{{ url_for('documents.view_public_document', public_id=doc.public_id) }}" target="_blank" class="btn btn-secondary btn-sm" title="View Public Page">View</a>
+              <a href="{{ url_for('admin.edit_document', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Edit Metadata">Edit</a>
+              <a href="{{ url_for('documents.download_document_file', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Download Document">Download</a>
+              <a href="{{ url_for('documents.serve_qr_image', public_id=doc.public_id) }}" download="{{ doc.public_id }}.png" class="btn btn-secondary btn-sm" title="Download QR PNG">QR</a>
+              <a href="{{ url_for('admin.printable_label', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Printable Label">Label</a>
+              
+              {% if doc.is_active %}
+                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="deactivate-modal-{{ doc.public_id }}" style="color: var(--warning);" title="Deactivate">Deactivate</button>
+              {% else %}
+                <button type="button" class="btn btn-secondary btn-sm" data-modal-target="reactivate-modal-{{ doc.public_id }}" style="color: var(--success);" title="Reactivate">Reactivate</button>
+              {% endif %}
+              
+              <button type="button" class="btn btn-secondary btn-sm" data-modal-target="delete-modal-{{ doc.public_id }}" style="color: var(--danger);" title="Permanently Delete">Delete</button>
+            </div>
+
+            <!-- Deactivate Modal -->
+            <div id="deactivate-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4>Deactivate Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p>Are you sure you want to deactivate <strong>{{ doc.title }}</strong>?</p>
+                  <p style="font-size: 0.85rem;">The public QR code and URL will return a <strong>410 Gone</strong> page. You can reactivate this document at any time and the same QR code will work again.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.deactivate_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger">Confirm Deactivation</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reactivate Modal -->
+            <div id="reactivate-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4>Reactivate Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p>Reactivate <strong>{{ doc.title }}</strong>?</p>
+                  <p style="font-size: 0.85rem;">The public QR code and URL will immediately resume serving this document.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.reactivate_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-success">Reactivate</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+
+            <!-- Delete Modal -->
+            <div id="delete-modal-{{ doc.public_id }}" class="modal-backdrop">
+              <div class="modal">
+                <div class="modal-header">
+                  <h4 style="color: var(--danger);">Permanently Delete Document</h4>
+                  <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                  <p><strong>Warning:</strong> You are about to permanently delete <strong>{{ doc.title }}</strong>.</p>
+                  <p style="font-size: 0.85rem;">The physical file and QR image will be erased from storage. Its public ID (<code>{{ doc.public_id }}</code>) will be recorded as a permanent tombstone so it is never reused and the URL continues to return 410 Gone.</p>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+                  <form method="POST" action="{{ url_for('admin.delete_document', public_id=doc.public_id) }}">
+                    {{ empty_form.hidden_tag() }}
+                    <button type="submit" class="btn btn-danger">Permanently Delete</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  {% if pagination.pages > 1 %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+    <div style="font-size: 0.875rem; color: var(--text-muted);">
+      Page {{ pagination.page }} of {{ pagination.pages }} ({{ pagination.total }} documents total)
+    </div>
+    <div style="display: flex; gap: 0.5rem;">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.documents_list', page=pagination.prev_num, q=query_str, category=current_category, file_type=current_file_type, status=current_status, sort_by=sort_by) }}" class="btn btn-secondary btn-sm">&larr; Previous</a>
+      {% endif %}
+      {% if pagination.has_next %}
+        <a href="{{ url_for('admin.documents_list', page=pagination.next_num, q=query_str, category=current_category, file_type=current_file_type, status=current_status, sort_by=sort_by) }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div style="text-align: center; padding: 3rem 1rem;">
+    <h4>No matching documents found</h4>
+    <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Try adjusting your search criteria or filters.</p>
+    <a href="{{ url_for('admin.documents_list') }}" class="btn btn-secondary">Clear Filters</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+

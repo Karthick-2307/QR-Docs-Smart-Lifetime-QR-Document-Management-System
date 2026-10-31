@@ -1,0 +1,141 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}System Settings{% endblock %}
+
+{% block admin_content %}
+<div style="max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+
+  <!-- Profile & Password Card -->
+  <div class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+      <h3 style="font-size: 1.15rem; margin: 0;">Account Profile &amp; Password</h3>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 0.85rem; font-weight: 600;">Role:</span>
+        {% if current_user.is_main_admin %}
+          <span style="font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: rgba(37,99,235,0.12); color: #2563EB;">(admin)</span>
+        {% else %}
+          <span style="font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px; background: rgba(100,116,139,0.15); color: #475569;">(sub admin)</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.settings') }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label class="form-label" for="display_name">Custom Display Name</label>
+        {{ form.display_name(class="form-control", id="display_name", placeholder="e.g. Manoj S") }}
+        <small style="color: var(--text-muted); font-size: 0.8rem;">
+          Your name displayed across the system with your <code>({{ current_user.role_label }})</code> tag.
+        </small>
+        {% for error in form.display_name.errors %}
+          <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="current_password">Current Password</label>
+        {{ form.current_password(class="form-control", id="current_password", required=true) }}
+        {% for error in form.current_password.errors %}
+          <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="new_password">New Password</label>
+          {{ form.new_password(class="form-control", id="new_password", required=true) }}
+          {% for error in form.new_password.errors %}
+            <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+          {% endfor %}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="confirm_password">Confirm New Password</label>
+          {{ form.confirm_password(class="form-control", id="confirm_password", required=true) }}
+          {% for error in form.confirm_password.errors %}
+            <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+        <button type="submit" class="btn btn-primary">Save Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Environment & Base URL Configuration (Read-only) -->
+  <div class="card">
+    <div class="card-header">
+      <h3 style="font-size: 1.15rem; margin: 0;">Public Base URL & Domain Config</h3>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+      The <code>PUBLIC_BASE_URL</code> is the foundation of all lifetime QR codes. It is configured in the server environment (<code>.env</code>).
+    </p>
+
+    <div class="form-group">
+      <label class="form-label">Current PUBLIC_BASE_URL (Read-Only)</label>
+      <input type="text" class="form-control" value="{{ public_base_url }}" readonly style="background: var(--surface-alt); font-family: monospace;">
+      <div class="form-text">
+        {% if is_production %}
+          <span style="color: var(--success); font-weight: 600;">Production Mode:</span> Permanent HTTPS domain verified.
+        {% else %}
+          <span style="color: var(--warning); font-weight: 600;">Development Mode:</span> Localhost is permitted for testing only.
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="alert alert-warning" style="margin-top: 1rem;">
+      <div style="font-size: 0.85rem;">
+        <strong>Important Lifetime Policy:</strong> Changing <code>PUBLIC_BASE_URL</code> will cause previously printed physical QR codes to point to the old address. Always maintain HTTP permanent 301 redirects on former domains to protect legacy printed labels.
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Maintenance Action -->
+  <div class="card">
+    <div class="card-header">
+      <h3 style="font-size: 1.15rem; margin: 0;">Regenerate All QR Images</h3>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+      Re-creates all QR code PNG images on disk from scratch using the current <code>PUBLIC_BASE_URL</code>. Useful if storage files were restored or corrupted.
+    </p>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Note: This does not affect already-printed physical stickers.
+      </div>
+      <button type="button" class="btn btn-secondary" data-modal-target="regenerate-all-modal">
+        Regenerate All QR Images
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Regenerate All Modal -->
+<div id="regenerate-all-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Regenerate All QR Codes</h4>
+      <button type="button" class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to regenerate all QR PNG images in the system?</p>
+      <p style="font-size: 0.85rem; color: var(--warning);">
+        Warning: If you changed PUBLIC_BASE_URL, newly downloaded QR images will encode the new URL, but physical QR codes already printed will continue pointing to the old URL.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+      <form method="POST" action="{{ url_for('admin.regenerate_all_qr') }}">
+        {{ empty_form.hidden_tag() }}
+        <button type="submit" class="btn btn-primary">Proceed</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

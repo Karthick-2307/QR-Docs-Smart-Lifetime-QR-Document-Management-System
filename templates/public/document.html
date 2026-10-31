@@ -1,0 +1,632 @@
+{% extends "base.html" %}
+
+{% block title %}Verify Certificate – Thiranex{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block layout %}
+<div class="cert-verify-container">
+  <!-- Live Thiranex Website as Fullscreen Background -->
+  <div class="bg-website-wrapper">
+    <iframe 
+      id="thiranexBgFrame"
+      src="https://www.thiranex.in/" 
+      class="bg-website-frame" 
+      title="Thiranex Official Website"
+      loading="eager"
+    ></iframe>
+  </div>
+
+  <!-- Floating Re-open Button (visible when modal is closed) -->
+  <button type="button" id="reopenVerifyBtn" class="floating-verify-btn" onclick="openModal()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      <path d="M9 12l2 2 4-4"/>
+    </svg>
+    Verify Certificate
+  </button>
+
+  <!-- Centered Verification Modal Overlay matching exact screenshot -->
+  <div id="verifyModalBackdrop" class="cert-modal-backdrop active">
+    <div class="cert-modal-card">
+      <!-- Modal Header -->
+      <div class="cert-modal-header">
+        <h3 class="cert-modal-title">Verify Certificate</h3>
+        <button type="button" class="cert-modal-close" onclick="closeModal()" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Emerald Green Shield Icon with White Checkmark -->
+      <div style="text-align: center; margin-top: 14px; margin-bottom: 10px;">
+        <div class="cert-shield-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L4 5.5v6.2c0 5.4 3.4 10.4 8 11.8 4.6-1.4 8-6.4 8-11.8V5.5L12 2z" fill="#00C271"/>
+            <path d="M8.5 11.8l2.4 2.4 4.8-4.8" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Exact Instruction Subtitle matching screenshot -->
+      <p class="cert-modal-subtitle">
+        Enter the Certificate ID or Intern ID to<br>validate authenticity.
+      </p>
+
+      <!-- Input and Verify Form (Centered text value) -->
+      <form id="verifyForm" onsubmit="handleVerify(event)" class="cert-form-row">
+        <input 
+          type="text" 
+          id="certIdInput" 
+          class="cert-input" 
+          value="{{ document.masked_id }}" 
+          placeholder="{{ document.masked_id }}" 
+          required
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button type="submit" id="verifyBtn" class="cert-btn-verify">
+          Verify
+        </button>
+      </form>
+
+      <!-- Notice: Expired Banner if document is expired -->
+      {% if document.is_expired %}
+      <div style="background: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; border-radius: 8px; padding: 8px 12px; font-size: 12px; margin-bottom: 12px; text-align: center;">
+        <strong>Notice:</strong> This document expired on <strong>{{ document.expiry_date.strftime('%B %d, %Y') }}</strong>.
+      </div>
+      {% endif %}
+
+      <!-- Dynamic Feedback / Alert Message -->
+      <div id="verifyAlert" style="display: none; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 14px; text-align: center;"></div>
+
+      <!-- Verified Result Box (Exact match with screenshot) -->
+      <div id="verifyResultCard" class="cert-result-card">
+        <!-- Mint Green Circle with Smooth Verified Badge & White Checkmark Avatar -->
+        <div class="cert-result-avatar">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#00C271">
+            <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+          </svg>
+        </div>
+
+        <!-- Info Column -->
+        <div class="cert-result-info">
+          <!-- Row 1: Recipient Name and Gold Ribbon Medal -->
+          <div class="cert-title-row">
+            <span id="resTitle" class="cert-person-name">{{ document.title }}</span>
+            <!-- Custom Vector Gold Ribbon Medal matching screenshot identically -->
+            <span class="cert-medal" title="Certified & Awarded">
+              <svg width="19" height="23" viewBox="0 0 20 24" fill="none" class="medal-svg">
+                <!-- Left ribbon tail with fishtail cut -->
+                <path d="M7 12.5L4 22L7.2 20.2L9.6 22L8.5 12.5" fill="#D97706"/>
+                <path d="M7 12.5L4.5 21.3L7.2 19.8L8.6 21L7.8 12.5" fill="#F59E0B"/>
+                <!-- Right ribbon tail with fishtail cut -->
+                <path d="M11.5 12.5L10.4 22L12.8 20.2L16 22L13 12.5" fill="#B45309"/>
+                <path d="M12.2 12.5L11.4 21L12.8 19.8L15.5 21.3L13 12.5" fill="#D97706"/>
+                <!-- Gold circular medallion -->
+                <circle cx="10" cy="8" r="7.5" fill="url(#medalGoldGradient)" stroke="#D97706" stroke-width="1"/>
+                <circle cx="10" cy="8" r="5.6" fill="none" stroke="#FEF08A" stroke-width="0.8" stroke-dasharray="1.2 1.2"/>
+                <circle cx="10" cy="8" r="3.2" fill="#F59E0B" opacity="0.6"/>
+                <defs>
+                  <linearGradient id="medalGoldGradient" x1="4" y1="2" x2="16" y2="14" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#FDE047"/>
+                    <stop offset="0.45" stop-color="#F59E0B"/>
+                    <stop offset="1" stop-color="#D97706"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+            </span>
+          </div>
+
+          <!-- Row 2: Verified Badge Pill -->
+          <div style="margin-top: 5px;">
+            <span class="cert-badge-verified">
+              <svg width="13" height="13" viewBox="0 0 20 20" fill="#00C271">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+              </svg>
+              Verified
+            </span>
+          </div>
+
+          <!-- Row 3: Domain Pill -->
+          <div style="margin-top: 7px;">
+            <span id="resCategory" class="cert-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+              </svg>
+              {{ (document.category or 'FULL STACK DEVELOPMENT')|upper }}
+            </span>
+          </div>
+
+          <!-- Row 4: Date Pill -->
+          <div style="margin-top: 5px;">
+            <span id="resDate" class="cert-pill">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              {{ document.document_date.strftime('%Y-%m') if document.document_date else document.uploaded_at.strftime('%Y-%m') }}
+            </span>
+          </div>
+
+          <!-- Row 5: Centered Verified & Certified -->
+          <div class="cert-verified-label">
+            Verified &amp; Certified
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons below card -->
+      <div id="certActions" class="cert-actions-row">
+        <a id="btnViewFile" href="{{ url_for('documents.view_document_file', public_id=document.public_id) }}" target="_blank" class="cert-btn-action cert-btn-primary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+          View Certificate / Document
+        </a>
+        <a id="btnDownloadFile" href="{{ url_for('documents.download_document_file', public_id=document.public_id) }}" class="cert-btn-action cert-btn-secondary">
+          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          Download
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Exact styling matching Thiranex screenshots */
+.cert-verify-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.bg-website-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  background: #091A44;
+}
+
+.bg-website-frame {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* Floating re-open button */
+.floating-verify-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 100;
+  background: #2563EB;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 9999px;
+  padding: 12px 22px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.5);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.floating-verify-btn:hover {
+  background: #1D4ED8;
+  transform: translateY(-2px);
+}
+
+/* Modal Backdrop */
+.cert-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.cert-modal-backdrop.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Modal Card */
+.cert-modal-card {
+  background: #FFFFFF;
+  color: #0F172A;
+  border-radius: 22px;
+  width: 100%;
+  max-width: 410px;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.35);
+  padding: 24px 22px 20px 22px;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  max-height: 92vh;
+  overflow-y: auto;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+@keyframes modalPopIn {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.cert-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cert-modal-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.cert-modal-close {
+  background: #F1F5F9;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.cert-modal-close:hover {
+  background: #E2E8F0;
+}
+
+.cert-shield-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cert-modal-subtitle {
+  font-size: 0.815rem;
+  font-weight: 500;
+  color: #52525B;
+  text-align: center;
+  margin: 0 auto 16px auto;
+  line-height: 1.45;
+}
+
+/* Input Form Row */
+.cert-form-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cert-input {
+  flex-grow: 1;
+  border: 1.5px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #0F172A;
+  outline: none;
+  text-align: center;
+  letter-spacing: 0.3px;
+  background: #FFFFFF;
+}
+
+.cert-input:focus {
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.cert-btn-verify {
+  background: #1D4ED8;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 22px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.cert-btn-verify:hover {
+  background: #1E40AF;
+}
+
+.cert-btn-verify:active {
+  transform: scale(0.98);
+}
+
+/* Verified Result Card */
+.cert-result-card {
+  background: #F8FAFC;
+  border: 1px solid #EEF2F6;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.cert-result-avatar {
+  width: 44px;
+  height: 44px;
+  background: #DCFCE7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cert-result-info {
+  flex-grow: 1;
+}
+
+.cert-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cert-person-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.2px;
+  text-transform: uppercase;
+}
+
+.cert-medal {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+
+.cert-badge-verified {
+  background: #E8F8F0;
+  border: 1px solid #A7F3D0;
+  color: #047857;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cert-pill {
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  color: #334155;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: 0.2px;
+}
+
+.cert-verified-label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #00C271;
+  margin-top: 14px;
+  text-align: center;
+  letter-spacing: 0.2px;
+}
+
+/* Action Buttons */
+.cert-actions-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cert-btn-action {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: 8px;
+  text-decoration: none !important;
+  transition: all 0.15s;
+}
+
+.cert-btn-primary {
+  background: #2563EB;
+  color: #FFFFFF !important;
+}
+
+.cert-btn-primary:hover {
+  background: #1D4ED8;
+}
+
+.cert-btn-secondary {
+  background: #F1F5F9;
+  color: #334155 !important;
+  border: 1px solid #CBD5E1;
+}
+
+.cert-btn-secondary:hover {
+  background: #E2E8F0;
+}
+
+
+
+@media (max-width: 480px) {
+  .cert-modal-backdrop {
+    padding: 12px;
+  }
+
+  .cert-modal-card {
+    padding: 20px 16px;
+    border-radius: 20px;
+    max-width: 100%;
+  }
+
+  .cert-modal-title {
+    font-size: 1.2rem;
+  }
+
+  .cert-input {
+    /* 16px font size prevents iOS Safari from auto-zooming on focus */
+    font-size: 16px;
+    padding: 10px 8px;
+  }
+
+  .cert-btn-verify {
+    padding: 10px 18px;
+    font-size: 0.95rem;
+  }
+
+  .cert-btn-action {
+    padding: 9px 8px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 360px) {
+  .cert-actions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cert-btn-action {
+    width: 100%;
+    padding: 10px;
+  }
+}
+</style>
+
+<script>
+function closeModal() {
+  document.getElementById('verifyModalBackdrop').classList.remove('active');
+  document.getElementById('reopenVerifyBtn').style.display = 'inline-flex';
+}
+
+function openModal() {
+  document.getElementById('verifyModalBackdrop').classList.add('active');
+  document.getElementById('reopenVerifyBtn').style.display = 'none';
+}
+
+async function handleVerify(e) {
+  e.preventDefault();
+  const input = document.getElementById('certIdInput');
+  const idVal = input.value.trim();
+  const alertBox = document.getElementById('verifyAlert');
+  const resultCard = document.getElementById('verifyResultCard');
+  const actionsRow = document.getElementById('certActions');
+  const verifyBtn = document.getElementById('verifyBtn');
+
+  if (!idVal) return;
+
+  verifyBtn.textContent = 'Verifying...';
+  verifyBtn.disabled = true;
+  alertBox.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/verify/' + encodeURIComponent(idVal));
+    const data = await res.json();
+
+    if (res.ok && data.success && data.document) {
+      const doc = data.document;
+      document.getElementById('resTitle').textContent = doc.title;
+      document.getElementById('resCategory').innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+          <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+        </svg>
+        ${doc.category ? doc.category.toUpperCase() : 'FULL STACK DEVELOPMENT'}
+      `;
+      document.getElementById('resDate').innerHTML = `
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        ${doc.date || '2026-09'}
+      `;
+
+      document.getElementById('btnViewFile').href = doc.file_url;
+      document.getElementById('btnDownloadFile').href = doc.download_url;
+      if (doc.masked_id) {
+        document.getElementById('certIdInput').value = doc.masked_id;
+      }
+
+      resultCard.style.display = 'flex';
+      actionsRow.style.display = 'flex';
+      alertBox.style.display = 'none';
+
+      // Update URL in address bar without reload
+      window.history.pushState({}, '', '/document/' + encodeURIComponent(doc.public_id));
+    } else {
+      resultCard.style.display = 'none';
+      actionsRow.style.display = 'none';
+      alertBox.style.background = '#FEE2E2';
+      alertBox.style.color = '#B91C1C';
+      alertBox.style.border = '1px solid #FCA5A5';
+      alertBox.textContent = data.error || 'No verified record found matching this ID.';
+      alertBox.style.display = 'block';
+    }
+  } catch (err) {
+    resultCard.style.display = 'none';
+    actionsRow.style.display = 'none';
+    alertBox.style.background = '#FEE2E2';
+    alertBox.style.color = '#B91C1C';
+    alertBox.style.border = '1px solid #FCA5A5';
+    alertBox.textContent = 'Verification error: ' + err.message;
+    alertBox.style.display = 'block';
+  } finally {
+    verifyBtn.textContent = 'Verify';
+    verifyBtn.disabled = false;
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title or "Error" }} – QR Docs{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 4rem auto; text-align: center;">
+  <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; background: #FEF3C7; color: #D97706; border-radius: 9999px; margin-bottom: 1.5rem;">
+    <svg width="32" height="32" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+  </div>
+
+  <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--text);">
+    {{ title or "Unexpected Error" }}
+  </h1>
+  <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem;">
+    {{ message or "An internal error occurred while processing your request. Please try again later." }}
+  </p>
+
+  <div style="display: flex; gap: 1rem; justify-content: center;">
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Return Home</a>
+  </div>
+</div>
+{% endblock %}
+

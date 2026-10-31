@@ -1,0 +1,220 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Edit Document{% endblock %}
+
+{% block admin_content %}
+<div style="max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 2rem;">
+
+  <!-- Edit Metadata Form -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 style="font-size: 1.2rem; margin: 0;">Edit Document Metadata</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+          Public ID: <code style="color: var(--primary);">{{ document.public_id }}</code> (Permanent and immutable)
+        </p>
+      </div>
+      <div>
+        {% if not document.is_active %}
+          <span class="badge badge-danger">Inactive</span>
+        {% elif document.is_expired %}
+          <span class="badge badge-warning">Expired</span>
+        {% else %}
+          <span class="badge badge-success">Active</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.edit_document', public_id=document.public_id) }}">
+      {{ form.hidden_tag() }}
+
+      <div class="form-group">
+        <label class="form-label" for="title">Document Title <span style="color: var(--danger);">*</span></label>
+        {{ form.title(class="form-control", id="title", required=true) }}
+        {% for error in form.title.errors %}
+          <div class="form-text" style="color: var(--danger);">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Description</label>
+        {{ form.description(class="form-control", id="description", rows="3") }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="certificate_code">Certificate ID / Masked Code</label>
+          {{ form.certificate_code(class="form-control", id="certificate_code", placeholder="e.g. THX-SEP2626-093") }}
+          <div class="form-text">Short 4-digit code or custom certificate ID for manual verification.</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="category">Category / Domain</label>
+          {{ form.category(class="form-control", id="category") }}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tags">Tags</label>
+        {{ form.tags(class="form-control", id="tags", placeholder="Comma separated") }}
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+        <div class="form-group">
+          <label class="form-label" for="author">Author / Issuer</label>
+          {{ form.author(class="form-control", id="author") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="document_date">Document Date</label>
+          {{ form.document_date(class="form-control", id="document_date", type="date") }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="expiry_date">Expiry Date</label>
+          {{ form.expiry_date(class="form-control", id="expiry_date", type="date") }}
+          <div class="form-text">Informational only. Does not disable the QR code.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <a href="{{ url_for('admin.documents_list') }}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Replace File Section -->
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h3 style="font-size: 1.15rem; margin: 0;">Replace Document File</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+          Current File: <strong>{{ document.original_filename }}</strong> ({{ (document.file_size / 1024)|round(1) }} KB, {{ document.file_extension.upper() }})
+        </p>
+      </div>
+    </div>
+
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.25rem;">
+      Replacing the file safely writes the new version and deletes the old one. The <strong>public ID, QR code, and public URL will not change</strong>.
+    </p>
+
+    <form method="POST" action="{{ url_for('admin.replace_document_file', public_id=document.public_id) }}" enctype="multipart/form-data">
+      {{ replace_form.hidden_tag() }}
+      <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="flex-grow: 1;">
+          {{ replace_form.file(class="form-control", required=true, accept=".pdf,.png,.jpg,.jpeg") }}
+        </div>
+        <button type="submit" class="btn btn-secondary" onclick="return confirm('Replace this document file with the selected new file?');">
+          Upload Replacement
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Management & Danger Zone -->
+  <div class="card" style="border-color: rgba(220, 38, 38, 0.3);">
+    <div class="card-header" style="border-bottom-color: rgba(220, 38, 38, 0.2);">
+      <h3 style="font-size: 1.15rem; margin: 0; color: var(--danger);">Lifecycle Controls & Danger Zone</h3>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 1px solid var(--border);">
+      <div>
+        <div style="font-weight: 600;">Document Availability</div>
+        <div style="color: var(--text-muted); font-size: 0.85rem;">
+          Deactivating makes the public URL return a 410 Gone page. Reactivating restores public access immediately.
+        </div>
+      </div>
+      <div>
+        {% if document.is_active %}
+          <button type="button" class="btn btn-secondary" data-modal-target="deactivate-modal" style="color: var(--warning);">
+            Deactivate Document
+          </button>
+        {% else %}
+          <button type="button" class="btn btn-success" data-modal-target="reactivate-modal">
+            Reactivate Document
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; padding-top: 1.25rem;">
+      <div>
+        <div style="font-weight: 600; color: var(--danger);">Permanently Delete</div>
+        <div style="color: var(--text-muted); font-size: 0.85rem;">
+          Irreversibly erases files from disk and adds public ID to the retired tombstone table.
+        </div>
+      </div>
+      <button type="button" class="btn btn-danger" data-modal-target="delete-modal">
+        Permanently Delete
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Deactivate Modal -->
+<div id="deactivate-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Deactivate Document</h4>
+      <button type="button" class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to deactivate <strong>{{ document.title }}</strong>?</p>
+      <p style="font-size: 0.85rem;">The public URL will return 410 Gone until reactivated.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+      <form method="POST" action="{{ url_for('admin.deactivate_document', public_id=document.public_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Confirm Deactivation</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Reactivate Modal -->
+<div id="reactivate-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h4>Reactivate Document</h4>
+      <button type="button" class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Reactivate <strong>{{ document.title }}</strong>?</p>
+      <p style="font-size: 0.85rem;">The public QR code and page will resume serving this document immediately.</p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+      <form method="POST" action="{{ url_for('admin.reactivate_document', public_id=document.public_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-success">Reactivate</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div id="delete-modal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h4 style="color: var(--danger);">Confirm Permanent Deletion</h4>
+      <button type="button" class="modal-close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Warning:</strong> You are about to permanently delete <strong>{{ document.title }}</strong>.</p>
+      <p style="font-size: 0.85rem;">
+        This action cannot be undone. Files will be deleted from disk. The public ID <code>{{ document.public_id }}</code> will be permanently retired as a tombstone so it can never be reused.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary modal-close">Cancel</button>
+      <form method="POST" action="{{ url_for('admin.delete_document', public_id=document.public_id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit" class="btn btn-danger">Confirm Permanent Deletion</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

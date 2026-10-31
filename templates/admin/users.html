@@ -1,0 +1,118 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}Admin &amp; Sub-Admin Management{% endblock %}
+
+{% block admin_content %}
+<div class="card">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2 style="font-size: 1.25rem; font-weight: 800; margin: 0 0 0.25rem 0;">Administrator Accounts</h2>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin: 0;">
+        Manage Main Administrators and Sub-Admins. Sub-admins have full operational access to manage certificates and documents, but only the Main Admin can manage and delete sub-admins.
+      </p>
+    </div>
+    <a href="{{ url_for('admin.user_create') }}" class="btn btn-primary">
+      <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+      Add New Sub-Admin
+    </a>
+  </div>
+
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Custom Name &amp; Role</th>
+          <th>Username</th>
+          <th>Role</th>
+          <th>Created Date</th>
+          <th style="text-align: right;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in admins %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <strong style="color: var(--text); font-size: 0.95rem;">{{ a.name_display }}</strong>
+              {% if a.is_main_admin %}
+                <span class="badge-role-admin">(admin)</span>
+              {% else %}
+                <span class="badge-role-subadmin">(sub admin)</span>
+              {% endif %}
+            </div>
+          </td>
+          <td>
+            <code style="font-size: 0.85rem; color: var(--primary);">@{{ a.username }}</code>
+          </td>
+          <td>
+            {% if a.is_main_admin %}
+              <span class="badge badge-primary" style="font-weight: 700;">Main Admin</span>
+            {% else %}
+              <span class="badge badge-secondary" style="font-weight: 600;">Sub Admin</span>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-size: 0.85rem; color: var(--text-muted);">{{ a.created_at.strftime('%Y-%m-%d') }}</span>
+          </td>
+          <td style="text-align: right;">
+            <div style="display: inline-flex; gap: 6px; align-items: center;">
+              <a href="{{ url_for('admin.user_edit', user_id=a.id) }}" class="btn btn-secondary btn-sm" title="Edit Account">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit
+              </a>
+
+              {% if a.id != current_user.id %}
+              <form method="POST" action="{{ url_for('admin.user_delete', user_id=a.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete {{ a.name_display }} ({{ a.role_label }})? This action cannot be undone.');">
+                {{ empty_form.hidden_tag() }}
+                <button type="submit" class="btn btn-danger btn-sm" title="Delete Account">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  Delete
+                </button>
+              </form>
+              {% else %}
+              <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic; padding: 0 4px;">You (Active)</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+.badge-role-admin {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563EB;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.badge-role-subadmin {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 9999px;
+  background: rgba(100, 116, 139, 0.15);
+  color: #475569;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .badge-role-admin {
+  background: rgba(59, 130, 246, 0.25);
+  color: #93C5FD;
+}
+
+[data-theme="dark"] .badge-role-subadmin {
+  background: rgba(148, 163, 184, 0.2);
+  color: #CBD5E1;
+}
+</style>
+{% endblock %}
+

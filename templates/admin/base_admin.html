@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block layout %}
+<div class="dashboard-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <a href="{{ url_for('admin.dashboard') }}" class="brand-link">
+        <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="CertVault Logo">
+        <span>CertVault</span>
+      </a>
+    </div>
+
+    <ul class="sidebar-menu">
+      <li>
+        <a href="{{ url_for('admin.dashboard') }}" class="sidebar-link {% if request.endpoint == 'admin.dashboard' %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('admin.documents_list') }}" class="sidebar-link {% if request.endpoint in ('admin.documents_list', 'admin.edit_document') %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          All Documents
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('admin.upload') }}" class="sidebar-link {% if request.endpoint in ('admin.upload', 'admin.upload_success') %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          Upload Document
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('admin.qr_manager') }}" class="sidebar-link {% if request.endpoint == 'admin.qr_manager' %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+          QR Code Manager
+        </a>
+      </li>
+      <li>
+        <a href="{{ url_for('scanner.scanner_page') }}" class="sidebar-link {% if request.endpoint == 'scanner.scanner_page' %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          QR Scanner
+        </a>
+      </li>
+      {% if current_user.is_main_admin %}
+      <li>
+        <a href="{{ url_for('admin.users_list') }}" class="sidebar-link {% if request.endpoint in ('admin.users_list', 'admin.user_create', 'admin.user_edit') %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+          Admin Accounts
+        </a>
+      </li>
+      {% endif %}
+      <li>
+        <a href="{{ url_for('admin.settings') }}" class="sidebar-link {% if request.endpoint == 'admin.settings' %}active{% endif %}">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          Settings
+        </a>
+      </li>
+      <li style="margin-top: auto;">
+        <a href="{{ url_for('auth.logout') }}" class="sidebar-link" style="color: var(--danger);">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Logout
+        </a>
+      </li>
+    </ul>
+
+    <div class="sidebar-footer">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+          <strong style="color: var(--text); font-size: 0.85rem;">{{ current_user.name_display }}</strong>
+          {% if current_user.is_main_admin %}
+            <span class="badge-role-admin">(admin)</span>
+          {% else %}
+            <span class="badge-role-subadmin">(sub admin)</span>
+          {% endif %}
+        </div>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">@{{ current_user.username }}</span>
+      </div>
+      <button class="btn btn-secondary btn-icon theme-toggle" title="Toggle Light/Dark Theme" type="button">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <div class="main-content">
+    <header class="top-navbar">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <button class="menu-toggle" type="button" aria-label="Toggle Navigation">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0;">{% block page_title %}Dashboard{% endblock %}</h2>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <div class="admin-chip-header" style="display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: var(--surface-alt); border-radius: 9999px; border: 1px solid var(--border);">
+          <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--success);"></div>
+          <span style="font-size: 0.825rem; font-weight: 600; color: var(--text);">{{ current_user.name_display }}</span>
+          {% if current_user.is_main_admin %}
+            <span class="badge-role-admin">(admin)</span>
+          {% else %}
+            <span class="badge-role-subadmin">(sub admin)</span>
+          {% endif %}
+        </div>
+
+        <a href="{{ url_for('admin.upload') }}" class="btn btn-primary btn-sm">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+          Upload Document
+        </a>
+      </div>
+    </header>
+
+    <div class="page-body">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              <span>{{ message }}</span>
+              <button type="button" class="btn-icon alert-close" style="background:none;border:none;cursor:pointer;color:inherit;">&times;</button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% block admin_content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% endblock layout %}
+

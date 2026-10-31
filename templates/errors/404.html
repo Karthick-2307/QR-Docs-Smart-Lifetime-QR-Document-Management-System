@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Document Not Found (404) – QR Docs{% endblock %}
+
+{% block content %}
+<div style="max-width: 540px; margin: 4rem auto; text-align: center;">
+  <div style="font-size: 4rem; font-weight: 900; color: var(--primary); margin-bottom: 0.5rem; line-height: 1;">
+    404
+  </div>
+  <h1 style="font-size: 1.75rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--text);">
+    Page or Document Not Found
+  </h1>
+  <p style="color: var(--text-muted); font-size: 1.05rem; line-height: 1.6; margin-bottom: 2rem;">
+    The requested public document identifier or webpage does not exist in the system.
+  </p>
+
+  {% if public_id %}
+  <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 0.75rem 1rem; display: inline-block; font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem;">
+    ID: {{ public_id }}
+  </div>
+  {% endif %}
+
+  <div style="display: flex; gap: 1rem; justify-content: center;">
+    <a href="{{ url_for('scanner.scanner_page') }}" class="btn btn-primary">Open Scanner</a>
+    <a href="{{ url_for('index') }}" class="btn btn-secondary">Return Home</a>
+  </div>
+</div>
+{% endblock %}
+

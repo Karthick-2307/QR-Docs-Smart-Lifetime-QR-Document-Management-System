@@ -1,0 +1,86 @@
+{% extends "admin/base_admin.html" %}
+
+{% block page_title %}QR Code Manager{% endblock %}
+
+{% block admin_content %}
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h3 style="font-size: 1.15rem; margin: 0;">Lifetime QR Code Inventory</h3>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0.25rem 0 0 0;">
+      All QR codes are deterministic, high-resolution PNGs encoded with error correction level H.
+    </p>
+  </div>
+
+  <form method="GET" action="{{ url_for('admin.qr_manager') }}" style="display: flex; gap: 0.5rem;">
+    <input type="text" name="q" value="{{ query_str or '' }}" placeholder="Search by title or ID..." class="form-control" style="width: 240px;">
+    <button type="submit" class="btn btn-secondary btn-sm">Search</button>
+  </form>
+</div>
+
+{% if pagination.items %}
+<div class="qr-grid">
+  {% for doc in pagination.items %}
+  <div class="qr-card">
+    <div class="qr-image-wrapper">
+      <img src="{{ url_for('documents.serve_qr_image', public_id=doc.public_id) }}" alt="QR Code for {{ doc.title }}">
+    </div>
+
+    <h4 style="font-size: 1rem; margin-bottom: 0.25rem; word-break: break-word;">{{ doc.title }}</h4>
+    <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace; margin-bottom: 0.75rem;">
+      {{ doc.public_id }}
+    </div>
+
+    <div style="margin-bottom: 1rem;">
+      {% if not doc.is_active %}
+        <span class="badge badge-danger">Inactive</span>
+      {% elif doc.is_expired %}
+        <span class="badge badge-warning">Expired</span>
+      {% else %}
+        <span class="badge badge-success">Active</span>
+      {% endif %}
+    </div>
+
+    <div style="display: flex; gap: 0.35rem; width: 100%; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('documents.serve_qr_image', public_id=doc.public_id) }}" download="{{ doc.public_id }}.png" class="btn btn-primary btn-sm" title="Download PNG">
+        PNG
+      </a>
+      <a href="{{ url_for('admin.printable_label', public_id=doc.public_id) }}" class="btn btn-secondary btn-sm" title="Print Label">
+        Label
+      </a>
+      <button type="button" class="btn btn-secondary btn-sm" data-copy="{{ base_url }}/document/{{ doc.public_id }}" title="Copy Public URL">
+        Copy Link
+      </button>
+      <a href="{{ url_for('documents.view_public_document', public_id=doc.public_id) }}" target="_blank" class="btn btn-secondary btn-sm" title="Open Public Page">
+        View
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if pagination.pages > 1 %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+  <div style="font-size: 0.875rem; color: var(--text-muted);">
+    Page {{ pagination.page }} of {{ pagination.pages }}
+  </div>
+  <div style="display: flex; gap: 0.5rem;">
+    {% if pagination.has_prev %}
+      <a href="{{ url_for('admin.qr_manager', page=pagination.prev_num, q=query_str) }}" class="btn btn-secondary btn-sm">&larr; Previous</a>
+    {% endif %}
+    {% if pagination.has_next %}
+      <a href="{{ url_for('admin.qr_manager', page=pagination.next_num, q=query_str) }}" class="btn btn-secondary btn-sm">Next &rarr;</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="card" style="text-align: center; padding: 3rem 1rem;">
+  <h4>No QR codes found</h4>
+  <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem;">Upload documents to automatically generate permanent QR codes.</p>
+  <a href="{{ url_for('admin.upload') }}" class="btn btn-primary">Upload Document</a>
+</div>
+{% endif %}
+{% endblock %}
+
