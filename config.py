@@ -76,6 +76,12 @@ class Config:
         # Render / Heroku provides postgres:// which SQLAlchemy 1.4+ rejects; rewrite to postgresql://
         if raw_db_url.startswith("postgres://"):
             raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+        # Clean channel_binding parameter if present (prevents libpq driver incompatibilities)
+        if "channel_binding=" in raw_db_url:
+            import re
+            raw_db_url = re.sub(r'[?&]channel_binding=[^&]+', '', raw_db_url)
+            if '?' not in raw_db_url and '&' in raw_db_url:
+                raw_db_url = raw_db_url.replace('&', '?', 1)
         SQLALCHEMY_DATABASE_URI = raw_db_url
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
